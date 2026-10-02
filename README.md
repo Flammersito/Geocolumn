@@ -1,5 +1,9 @@
 # GeoColumn
 
+<!-- Una vez conectado a GitHub, reemplaza "usuario/geocolumn" por tu
+     ruta real (ej. "santi-rojas/geocolumn") para que el badge funcione:
+     ![Tests](https://github.com/usuario/geocolumn/actions/workflows/tests.yml/badge.svg) -->
+
 Software de código abierto en Python para generar columnas estratigráficas
 de calidad profesional a partir de datos estructurados (Excel, y en el
 futuro CSV, GeoPackage/Shapefile), pensado para geólogos, estudiantes e
@@ -47,3 +51,7 @@ column = StratigraphicColumn.from_dicts([
 fig, _ = render_column(column)
 fig.savefig("columna.png", dpi=300)
 ```
+
+## Licencia
+
+MIT — ver [LICENSE](LICENSE).
