@@ -9,6 +9,7 @@ para cuando se implemente esa etapa).
 """
 
 import hashlib
+import warnings
 
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
@@ -18,6 +19,7 @@ from matplotlib.figure import Figure
 from geocolumn.core.column import StratigraphicColumn
 from geocolumn.styles.alteration import resolve_alteration_color
 from geocolumn.styles.colors import resolve_color
+from geocolumn.styles.lithologies import LithologyCatalog, LithologyStyle, default_catalog
 from geocolumn.styles.patterns import resolve_pattern
 
 # Paleta cualitativa de 20 colores, estable entre ejecuciones. Se usa
@@ -45,21 +47,53 @@ def _hash_color_for_lithology(lithology: str) -> tuple:
     return _PALETTE[index]
 
 
-def _resolve_unit_color(unit) -> str | tuple:
+def _resolve_unit_color(unit, style: LithologyStyle | None) -> str | tuple:
     """Determina el color final a usar para una unidad.
 
-    Prioridad: 1) el nombre de `unit.color` si está en el catálogo,
-    2) un color determinista por hash de la litología, como respaldo.
+    Prioridad: 1) `unit.color` si está en el catálogo de colores,
+    2) el color por defecto de la litología, 3) un color determinista
+    por hash del nombre de la litología.
     """
-    catalog_color = resolve_color(unit.color)
-    if catalog_color is not None:
-        return catalog_color
+    explicit = resolve_color(unit.color)
+    if explicit is not None:
+        return explicit
+    if style is not None:
+        default = resolve_color(style.color)
+        if default is not None:
+            return default
     return _hash_color_for_lithology(unit.lithology)
+
+
+def _resolve_unit_hatch(unit, style: LithologyStyle | None) -> str | None:
+    """Determina el `hatch` (textura) a usar para una unidad.
+
+    Prioridad: 1) `unit.pattern` si es un código FGDC catalogado,
+    2) el patrón por defecto de la litología, 3) sin patrón.
+
+    Si `unit.pattern` tiene un valor que no está en el catálogo (por
+    ejemplo, un error de dedo), se emite una advertencia en vez de
+    ignorarlo en silencio, y se recurre al patrón de la litología.
+    """
+    if unit.pattern:
+        explicit = resolve_pattern(unit.pattern)
+        if explicit is not None:
+            return explicit["hatch"]
+        warnings.warn(
+            f"Unidad '{unit.unit_id}': el patrón '{unit.pattern}' no está en el "
+            "catálogo de patrones FGDC; se usará el patrón por defecto de la litología.",
+            stacklevel=3,
+        )
+    if style is not None and style.pattern:
+        default = resolve_pattern(style.pattern)
+        if default is not None:
+            return default["hatch"]
+    return None
 
 
 def render_column(
     column: StratigraphicColumn,
     figsize: tuple[float, float] = (6, 10),
+    catalog: LithologyCatalog | None = None,
 ) -> tuple[Figure, tuple[Axes, Axes]]:
     """Dibuja una columna estratigráfica como rectángulos de litología.
 
@@ -82,6 +116,10 @@ def render_column(
             de profundidad o espesor en cada unidad (ver
             `StratigraphicColumn.resolve_depths`).
         figsize: Tamaño de la figura en pulgadas.
+        catalog: Catálogo de litologías con los colores y patrones por
+            defecto. Si es `None`, se usa el catálogo por defecto de
+            GeoColumn (`default_catalog()`). Pasa uno propio, ampliado
+            con `register`, para incluir litologías adicionales.
 
     Returns:
         Una tupla `(figura, (eje_columna, eje_leyenda))` de matplotlib,
@@ -89,26 +127,28 @@ def render_column(
         exportarla.
     """
     depths = column.resolve_depths()
+    catalog = catalog if catalog is not None else default_catalog()
 
     fig, (column_ax, legend_ax) = plt.subplots(
         ncols=2, figsize=figsize, gridspec_kw={"width_ratios": [1, 1.3]}
     )
 
-    lithology_entries: dict[str, tuple] = {}   # litología -> (color, hatch)
+    lithology_entries: dict[str, tuple] = {}   # nombre en leyenda -> (color, hatch)
     alteration_entries: dict[str, str] = {}    # nombre de alteración -> color
 
     for unit, (top, base) in zip(column, depths):
         height = base - top
-        color = _resolve_unit_color(unit)
-        pattern = resolve_pattern(unit.pattern)
-        hatch = pattern["hatch"] if pattern else None
+        style = catalog.get(unit.lithology)
+        color = _resolve_unit_color(unit, style)
+        hatch = _resolve_unit_hatch(unit, style)
+        label = style.display_name if style else unit.lithology
 
         rect = patches.Rectangle(
             (0, top), width=1, height=height,
             facecolor=color, edgecolor="black", linewidth=0.8, hatch=hatch,
         )
         column_ax.add_patch(rect)
-        lithology_entries.setdefault(unit.lithology, (color, hatch))
+        lithology_entries.setdefault(label, (color, hatch))
 
         if unit.hydrothermal_alteration:
             primary_alteration = unit.hydrothermal_alteration[0]
@@ -176,7 +216,8 @@ def _draw_legend(
                 facecolor=color, edgecolor="black", linewidth=0.6,
             )
             ax.add_patch(rect)
-            ax.text(1.2, y + swatch_height / 2, alteration, va="center", ha="left", fontsize=9)
+            ax.text(_ALTERATION_STRIP_WIDTH + 0.1, y + swatch_height / 2, alteration.replace("_", " "),
+                    va="center", ha="left", fontsize=9)
             y += swatch_height + gap
 
     ax.set_xlim(0, 1)

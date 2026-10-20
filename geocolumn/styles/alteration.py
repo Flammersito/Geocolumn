@@ -13,7 +13,7 @@ alteración más comunes en sistemas epitermales/pórfido. Se amplía
 agregando entradas aquí conforme se necesiten.
 """
 
-import unicodedata
+from geocolumn.styles._text import normalize_name
 
 ALTERATION_CATALOG: dict[str, str] = {
     "propilitica": "#6fae6f",
@@ -29,13 +29,6 @@ ALTERATION_CATALOG: dict[str, str] = {
 }
 
 
-def _normalize(text: str) -> str:
-    """Normaliza un nombre de alteración para buscarlo en el catálogo."""
-    text = text.strip().lower().replace(" ", "_")
-    text = unicodedata.normalize("NFKD", text)
-    return "".join(ch for ch in text if not unicodedata.combining(ch))
-
-
 def resolve_alteration_color(name: str | None) -> str | None:
     """Busca un nombre de alteración en el catálogo.
 
@@ -45,4 +38,4 @@ def resolve_alteration_color(name: str | None) -> str | None:
     """
     if not name:
         return None
-    return ALTERATION_CATALOG.get(_normalize(name))
+    return ALTERATION_CATALOG.get(normalize_name(name))

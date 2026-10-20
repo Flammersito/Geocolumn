@@ -12,7 +12,7 @@ aquí conforme se necesiten, no es necesario cubrir todos los colores
 posibles de una vez.
 """
 
-import unicodedata
+from geocolumn.styles._text import normalize_name
 
 COLOR_CATALOG: dict[str, str] = {
     "gris": "#808080",
@@ -32,18 +32,12 @@ COLOR_CATALOG: dict[str, str] = {
     "cafe": "#8b5e3c",
     "morado": "#7a5a8c",
     "rosa": "#f28c8c",
+    "salmon": "#f0a58a",
+    "naranja": "#e08a3c",
+    "ocre": "#cfa24a",
+    "azul_claro": "#9bbfe0",
+    "verde_claro": "#a8d5a0",
 }
-
-
-def _normalize(text: str) -> str:
-    """Normaliza un nombre de color para buscarlo en el catálogo.
-
-    Pasa a minúsculas, quita acentos y convierte espacios a guiones
-    bajos, para que "Gris Verdoso" y "gris_verdoso" sean equivalentes.
-    """
-    text = text.strip().lower().replace(" ", "_")
-    text = unicodedata.normalize("NFKD", text)
-    return "".join(ch for ch in text if not unicodedata.combining(ch))
 
 
 def resolve_color(name: str | None) -> str | None:
@@ -56,4 +50,4 @@ def resolve_color(name: str | None) -> str | None:
     """
     if not name:
         return None
-    return COLOR_CATALOG.get(_normalize(name))
+    return COLOR_CATALOG.get(normalize_name(name))
