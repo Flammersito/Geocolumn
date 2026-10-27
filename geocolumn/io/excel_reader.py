@@ -25,6 +25,8 @@ EXCEL_TO_MODEL_KEYS = {
     "top_depth_m": "top_depth",
     "base_depth_m": "base_depth",
     "thickness_m": "thickness",
+    "top_height_m": "top_height",
+    "base_height_m": "base_height",
 }
 
 
@@ -39,7 +41,10 @@ def _row_to_dict(row: pd.Series) -> dict:
 
 
 def read_column_from_excel(
-    path: str, sheet_name: str | int = 0, name: str | None = None
+    path: str,
+    sheet_name: str | int = 0,
+    name: str | None = None,
+    axis: str | None = None,
 ) -> StratigraphicColumn:
     """Lee un archivo Excel y devuelve la columna estratigráfica completa.
 
@@ -47,10 +52,14 @@ def read_column_from_excel(
         path: Ruta al archivo .xlsx.
         sheet_name: Nombre o índice de la hoja a leer (por defecto, la primera).
         name: Nombre opcional para la columna resultante.
+        axis: `"height"` (altura desde la base, columnas de afloramiento),
+            `"depth"` (profundidad, sondajes) o `None` para deducirlo de
+            las columnas del Excel (`*_height_m` o `*_depth_m`).
 
     Returns:
         Un `StratigraphicColumn` con las unidades en el mismo orden en que
-        aparecen las filas en el Excel.
+        aparecen las filas en el Excel. Las filas con `kind` = `vein`
+        (o `veta`) quedan aparte, en `column.veins`.
 
     Raises:
         ValueError: Si falta la columna obligatoria `unit_id`, o si algún
@@ -61,5 +70,5 @@ def read_column_from_excel(
     if "unit_id" not in df.columns:
         raise ValueError("El Excel debe tener una columna 'unit_id'.")
 
-    units = [StratigraphicUnit.from_dict(_row_to_dict(row)) for _, row in df.iterrows()]
-    return StratigraphicColumn(units=units, name=name)
+    items = [StratigraphicUnit.from_dict(_row_to_dict(row)) for _, row in df.iterrows()]
+    return StratigraphicColumn.from_units(items, name=name, axis=axis)

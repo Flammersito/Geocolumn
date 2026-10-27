@@ -39,7 +39,7 @@ def test_get_is_accent_case_and_space_insensitive():
 def test_get_finds_english_aliases():
     catalog = default_catalog()
     assert catalog.get("sandstone") is catalog.get("arenisca")
-    assert catalog.get("andesite") is catalog.get("andesita_lava")
+    assert catalog.get("andesite") is catalog.get("andesita")
 
 
 def test_get_returns_none_for_unknown_or_empty():

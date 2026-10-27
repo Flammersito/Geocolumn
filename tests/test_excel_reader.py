@@ -86,7 +86,7 @@ def test_missing_unit_id_column_raises_error(tmp_path):
 
 def test_invalid_contact_type_raises_error(tmp_path):
     path = tmp_path / "bad_contact.xlsx"
-    df = pd.DataFrame([{"unit_id": "X1", "lithology": "arenisca", "top_contact": "neto"}])
+    df = pd.DataFrame([{"unit_id": "X1", "lithology": "arenisca", "top_contact": "xyz"}])
     df.to_excel(path, index=False)
 
     with pytest.raises(ValueError, match="no reconocido"):
@@ -101,3 +101,40 @@ def test_default_contact_type_when_missing(tmp_path):
 
     column = read_column_from_excel(path)
     assert column[0].top_contact == ContactType.SHARP
+
+
+def test_height_columns_are_read_and_axis_is_height(tmp_path):
+    path = tmp_path / "heights.xlsx"
+    pd.DataFrame(
+        [
+            {"unit_id": "B1", "base_height_m": 0.0, "top_height_m": 3.0, "lithology": "lutita"},
+            {"unit_id": "B2", "base_height_m": 3.0, "top_height_m": 8.5, "lithology": "arenisca"},
+        ]
+    ).to_excel(path, index=False)
+
+    column = read_column_from_excel(path)
+    assert column.resolved_axis() == "height"
+    assert column.resolve_positions() == [(0.0, 3.0), (3.0, 8.5)]
+
+
+def test_explicit_axis_is_passed_to_the_column(tmp_path):
+    path = tmp_path / "depths.xlsx"
+    pd.DataFrame([{"unit_id": "A1", "thickness_m": 4.0}]).to_excel(path, index=False)
+    assert read_column_from_excel(path, axis="depth").axis == "depth"
+
+
+def test_kind_column_and_spanish_contact_are_read(tmp_path):
+    path = tmp_path / "veins.xlsx"
+    pd.DataFrame(
+        [
+            {"unit_id": "T1", "base_height_m": 0, "top_height_m": 10, "lithology": "pizarra",
+             "top_contact": "inferido"},
+            {"unit_id": "V1", "kind": "vein", "base_height_m": 4, "thickness_m": 0.15,
+             "lithology": "veta_cuarzo"},
+        ]
+    ).to_excel(path, index=False)
+
+    column = read_column_from_excel(path)
+    assert len(column) == 1 and len(column.veins) == 1
+    assert column[0].top_contact == ContactType.INFERRED
+    assert column.resolve_vein_positions() == [(4.0, pytest.approx(4.15))]

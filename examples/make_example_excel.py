@@ -6,6 +6,10 @@ Las columnas `color` y `pattern` se dejan vacías a propósito en casi todas
 las filas: GeoColumn toma el color y el patrón por defecto de la litología
 (ver geocolumn/styles/lithologies.py). Solo U2 sobrescribe el color, para
 mostrar que lo que se escribe en la unidad tiene prioridad sobre el catálogo.
+
+`top_contact` describe el contacto en el TECHO de la unidad, es decir, con la
+unidad que tiene encima. Por eso la falla que limita la base de U5 está
+escrita en U6 (la unidad de abajo).
 """
 
 from pathlib import Path
@@ -43,11 +47,11 @@ ROWS = [
      "Fm. Volcánica Inferior", 11.0, 12.5, "Neógeno", "Mioceno", N,
      "Alteración argílica sobreimpuesta; illita y caolinita en la matriz"],
     ["U5", 55, 70, N, "brecha_hidrotermal", N, N, "matriz fina", "vein_stockwork", N, "M-07;M-08;M-09",
-     "silicificacion_intensa;argilica_avanzada", "calcopirita_pirita_5-8pct;vetillas_cuarzo_sulfuros", "fault",
+     "silicificacion_intensa;argilica_avanzada", "calcopirita_pirita_5-8pct;vetillas_cuarzo_sulfuros", "sharp",
      "Fm. Volcánica Inferior", 11.5, 13.0, "Neógeno", "Mioceno", N,
      "Brecha hidrotermal mineralizada con stockwork de cuarzo-sulfuros; falla en la base"],
     ["U6", 70, 85, N, "arenisca_volcaniclastica", N, N, "arena gruesa", "planar_bedding", N, "M-10",
-     "propilitica_debil", "trazas_pirita", "gradual",
+     "propilitica_debil", "trazas_pirita", "fault",
      "Fm. Sedimentaria Basal", 12.0, 13.5, "Neógeno", "Mioceno", N,
      "Retrabajo sedimentario de material volcánico; alteración débil"],
     ["U7", 85, 100, N, "andesita_lava", N, N, N, "columnar_jointing", N, "M-11",
